@@ -5,21 +5,23 @@ import time
 from datetime import datetime
 from kiwoom_key import appkey, secretkey
 
-# DB 설정
+# MySQL 접속 설정
 MYSQL_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '비벙',
+    'password': '5737',
     'database': 'stock_data',
     'charset': 'utf8mb4'
 }
 
+# 안전한 숫자 변환
 def safe_int(value):
     try:
         return int(str(value).replace(',', '').strip())
     except:
         return 0
 
+# 접근토큰 발급
 def get_token():
     url = 'https://api.kiwoom.com/oauth2/token'
     payload = {
@@ -31,6 +33,7 @@ def get_token():
     res = requests.post(url, json=payload, headers=headers)
     return res.json().get("token")
 
+# 종목 정보 조회
 def fetch_stock_info(token, shcode):
     url = "https://api.kiwoom.com/api/dostk/mrkcond"
     headers = {
@@ -38,14 +41,14 @@ def fetch_stock_info(token, shcode):
         "authorization": f"Bearer {token}",
         "api-id": "ka10007"
     }
-    payload = { "stk_cd": shcode }
+    payload = {"stk_cd": shcode}
     response = requests.post(url, headers=headers, json=payload)
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"❌ 요청 실패: {shcode}, 코드: {response.status_code}")
         return None
 
+# DB 저장
 def save_snapshot(data):
     try:
         with pymysql.connect(**MYSQL_CONFIG) as conn:
@@ -72,45 +75,63 @@ def save_snapshot(data):
     except Exception as e:
         print(f"❌ 저장 실패: {data.get('stk_cd')} - {e}")
 
-# 시간 조건 기반 CSV 분기
-def get_csv_files_by_time():
-    now = datetime.now().strftime("%H:%M")
-    if now == "15:35":
-        return [
-            "코스피_전종목.csv",
-            "코스닥_전종목.csv",
-            "코넥스_전종목.csv"
-        ]
-    elif now in ["16:46", "20:01"]:
-        return ["넥스트_전종목.csv"]
-    else:
-        print(f"⏱ 현재 시간({now})에는 실행 조건이 맞지 않습니다.")
-        return []
-
-def load_stock_list(csv_files):
+# CSV에서 종목코드 로드
+def load_stock_list(file):
     stock_list = []
-    for file in csv_files:
-        with open(file, newline='', encoding='utf-8-sig') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                stock_list.append(row["종목코드"])
+    with open(file, newline='', encoding='utf-8-sig') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            stock_list.append(row["종목코드"])
     return stock_list
 
-# 메인 실행
-if __name__ == '__main__':
-    csv_files = get_csv_files_by_time()
-    if not csv_files:
-        exit(0)
+# 실패 로깅
+def log_failed_code(code):
+    with open("failed_codes.log", "a", encoding="utf-8") as f:
+        f.write(f"{datetime.now()} - {code}\n")
 
+# 작업 실행 함수
+def run_job(file):
     token = get_token()
-    stock_codes = load_stock_list(csv_files)
+    stock_codes = load_stock_list(file)
     success_count = 0
-
     for code in stock_codes:
         info = fetch_stock_info(token, code)
         if info:
             save_snapshot(info)
             success_count += 1
+        else:
+            print(f"❌ 실패: {code}")
+            log_failed_code(code)
         time.sleep(0.2)
+    print(f"📊 총 저장된 종목 수: {success_count} / {len(stock_codes)}")
 
-    print(f"\n📊 총 저장된 종목 수: {success_count}개")
+# 예약된 시간까지 대기
+def wait_until(target_time_str):
+    print(f"⏳ 실행 대기중... 대상 시간: {target_time_str}")
+    while True:
+        now = datetime.now().strftime("%H:%M")
+        if now == target_time_str:
+            print(f"🚀 실행 시작: {now}")
+            break
+        time.sleep(10)
+
+# 실행 시간 & 파일 매핑
+SCHEDULES = {
+    "15:35": "코스피_전종목.csv",
+    "15:35": "코스닥_전종목.csv",
+    "15:35": "코넥스_전종목.csv",
+    "16:46": "넥스트_전종목.csv",
+    "20:01": "넥스트_전종목.csv"
+}
+
+# 실행부
+if __name__ == '__main__':
+    already_run = set()
+
+    while True:
+        now = datetime.now().strftime("%H:%M")
+        for run_time, file in SCHEDULES.items():
+            if run_time == now and (run_time, file) not in already_run:
+                run_job(file)
+                already_run.add((run_time, file))
+        time.sleep(10)
