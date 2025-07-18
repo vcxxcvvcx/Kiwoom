@@ -1,0 +1,27 @@
+import pandas as pd
+import pymysql
+
+# MySQL 연결
+conn = pymysql.connect(
+    host='localhost',
+    user='root',
+    password='비번ㅇㅇㅇㅇ',
+    database='stock_data',
+    charset='utf8mb4'
+)
+
+# 데이터 조회
+query = """
+SELECT shcode, hname, price, change_pct, amount, listed_shares,
+       total_offer_qty, total_bid_qty, created_at
+FROM stock_snapshot
+ORDER BY id DESC
+LIMIT 2874;
+"""
+
+df = pd.read_sql(query, conn)
+
+# Excel로 저장 (encoding 제거)
+df.to_excel("latest_snapshot.xlsx", index=False)
+
+print("✅ 엑셀 저장 완료: latest_snapshot.xlsx")
