@@ -9,7 +9,7 @@ from kiwoom_key import appkey, secretkey
 MYSQL_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '5737',
+    'password': '비밀번호 네자리',
     'database': 'stock_data',
     'charset': 'utf8mb4'
 }
