@@ -1,0 +1,25 @@
+from pykrx import stock
+
+# 시장별 종목 리스트
+kospi = stock.get_market_ticker_list(market="KOSPI")
+kosdaq = stock.get_market_ticker_list(market="KOSDAQ")
+konex = stock.get_market_ticker_list(market="KONEX")
+
+# 종목 수 출력
+print(f"코스피 종목 수: {len(kospi)}")
+print(f"코스닥 종목 수: {len(kosdaq)}")
+print(f"코넥스 종목 수: {len(konex)}")
+
+# 예시: 각 시장에서 상위 5개 종목코드만 출력
+print("\n코스피 상위 5개:", kospi[:5])
+print("코스닥 상위 5개:", kosdaq[:5])
+print("코넥스 상위 5개:", konex[:5])
+
+
+# 코스피 종목 수: 962
+# 코스닥 종목 수: 1795
+# 코넥스 종목 수: 117
+
+# 코스피 상위 5개: ['095570', '006840', '027410', '282330', '138930']
+# 코스닥 상위 5개: ['060310', '054620', '265520', '211270', '109960']
+# 코넥스 상위 5개: ['278990', '343090', '112190', '260870', '296520']
