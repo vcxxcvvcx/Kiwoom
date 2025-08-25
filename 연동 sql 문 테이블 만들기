@@ -1,0 +1,12 @@
+CREATE TABLE stock_snapshot (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    shcode VARCHAR(10),         -- 종목코드
+    hname VARCHAR(50),          -- 종목명
+    price INT,                  -- 현재가
+    change_pct FLOAT,           -- 등락률
+    amount BIGINT,              -- 거래대금
+    listed_shares BIGINT,       -- 상장주식수
+    total_offer_qty BIGINT,     -- 총매도잔량
+    total_bid_qty BIGINT,       -- 총매수잔량
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
