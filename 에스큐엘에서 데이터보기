@@ -1,0 +1,4 @@
+SELECT shcode, hname, price, change_pct, amount, listed_shares, total_offer_qty, total_bid_qty, created_at
+FROM stock_snapshot
+ORDER BY id DESC
+LIMIT 3676; --여기에 3676개의 데이터를 보겠다는거임
